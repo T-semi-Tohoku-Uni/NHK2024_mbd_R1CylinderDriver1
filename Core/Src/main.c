@@ -86,22 +86,22 @@ void Arm_Elevator(uint8_t upDown){
 void Hand1(uint8_t openClose){
 	if(openClose == HAND_OPEN){
 		HAL_GPIO_WritePin(CYL_HND1_O_GPIO_Port, CYL_HND1_O_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND1_C_Pin, GPIO_PIN_RESET);
 	}
 	else if(openClose == HAND_CLOSE){
 		HAL_GPIO_WritePin(CYL_HND1_O_GPIO_Port, CYL_HND1_O_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND1_C_Pin, GPIO_PIN_SET);
 	}
 }
 
 void Hand2(uint8_t openClose){
 	if(openClose == HAND_OPEN){
-		HAL_GPIO_WritePin(CYL_HND1_O_GPIO_Port, CYL_HND1_O_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CYL_HND2_O_GPIO_Port, CYL_HND2_O_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CYL_HND2_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_RESET);
 	}
 	else if(openClose == HAND_CLOSE){
-		HAL_GPIO_WritePin(CYL_HND1_O_GPIO_Port, CYL_HND1_O_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(CYL_HND1_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CYL_HND2_O_GPIO_Port, CYL_HND2_O_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(CYL_HND2_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_SET);
 	}
 }
 
