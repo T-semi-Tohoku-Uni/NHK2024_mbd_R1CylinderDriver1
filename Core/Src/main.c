@@ -74,7 +74,13 @@ int _write(int file, char *ptr, int len)
 
 void Arm_Elevator(uint8_t upDown){
 	if(upDown == ARM_DOWN){
+		/*
 		HAL_GPIO_WritePin(CYL_ELV_D_GPIO_Port, CYL_ELV_D_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(CYL_ELV_U_GPIO_Port, CYL_ELV_U_Pin, GPIO_PIN_RESET);
+		*/
+
+		//一次ビデオまで
+		HAL_GPIO_WritePin(CYL_ELV_D_GPIO_Port, CYL_ELV_D_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(CYL_ELV_U_GPIO_Port, CYL_ELV_U_Pin, GPIO_PIN_RESET);
 	}
 	else if(upDown == ARM_UP){
