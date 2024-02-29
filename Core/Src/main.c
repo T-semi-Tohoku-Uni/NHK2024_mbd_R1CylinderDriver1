@@ -22,7 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "R1CANIDList.h"
+//#include "R1CANIDList.h"
+#include "NHK2024_R1CANIDList/R1CANIDList.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
