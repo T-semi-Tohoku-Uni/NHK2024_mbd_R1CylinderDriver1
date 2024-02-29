@@ -52,8 +52,10 @@ FDCAN_HandleTypeDef hfdcan1;
 UART_HandleTypeDef hlpuart1;
 
 /* USER CODE BEGIN PV */
+FDCAN_TxHeaderTypeDef  TxHeader;
 FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[1];
+uint8_t armCurrentState;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -106,6 +108,40 @@ void Hand2(uint8_t openClose){
 	}
 }
 
+/*
+ * send the current Arm State (UP or Down) to raspberrypi for safety
+ */
+void sendArmStateToRaspi() {
+	// Set CAN Header
+    TxHeader.Identifier = CANID_ARM_STATE;
+    TxHeader.IdType = FDCAN_STANDARD_ID;
+    TxHeader.TxFrameType = FDCAN_DATA_FRAME;
+    TxHeader.DataLength = FDCAN_DLC_BYTES_1;
+    TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    TxHeader.BitRateSwitch = FDCAN_BRS_ON;
+    TxHeader.FDFormat = FDCAN_FD_CAN;
+    TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+    TxHeader.MessageMarker = 0;
+
+    // Declare TxData
+    uint8_t txData;
+    if (armCurrentState == ARM_DOWN) {
+    	txData = ARM_DOWN; // => 0
+    } else {
+    	txData = ARM_UP; // => 1
+    }
+
+    // Send CAN Message
+    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, &txData) != HAL_OK)
+    {
+    	Error_Handler();
+    }
+
+    // Wait until buffer size smaller than 3
+    while(HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1) != 3) {} // To do : Check can transceiver size
+}
+
+
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
 	if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
 		 if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
@@ -115,6 +151,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 		switch(RxHeader.Identifier){
 		case CANID_ARM_ELEVATOR:
 			Arm_Elevator(RxData[0]);
+			armCurrentState = RxData[0];
 			printf("Arm elevator %d\r\n", RxData[0]);
 			break;
 
