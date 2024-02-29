@@ -136,9 +136,6 @@ void sendArmStateToRaspi() {
     {
     	Error_Handler();
     }
-
-    // Wait until buffer size smaller than 3
-    while(HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1) != 3) {} // To do : Check can transceiver size
 }
 
 
@@ -149,6 +146,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 		}
 
 		switch(RxHeader.Identifier){
+		case CANID_ARM_STATE:
+			sendArmStateToRaspi();
+			break;
+
 		case CANID_ARM_ELEVATOR:
 			Arm_Elevator(RxData[0]);
 			armCurrentState = RxData[0];
