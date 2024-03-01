@@ -55,7 +55,9 @@ UART_HandleTypeDef hlpuart1;
 FDCAN_TxHeaderTypeDef  TxHeader;
 FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[1];
+//uint8_t TxData[1] = {0x00};
 uint8_t armCurrentState;
+uint8_t TxData[8] = {1, 1, 1, 0, 1, 1, 0, 0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,19 +125,42 @@ void sendArmStateToRaspi() {
     TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
     TxHeader.MessageMarker = 0;
 
-    // Declare TxData
-    uint8_t txData;
     if (armCurrentState == ARM_DOWN) {
-    	txData = ARM_DOWN; // => 0
+    	TxData[0] = ARM_DOWN; // => 0
     } else {
-    	txData = ARM_UP; // => 1
+    	TxData[0] = ARM_UP; // => 1
     }
 
     // Send CAN Message
-    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, &txData) != HAL_OK)
+    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData) != HAL_OK)
     {
     	Error_Handler();
     }
+
+    printf("Successfully send\r\n");
+}
+
+void sendCANMessage(uint32_t canId) {
+
+	// Set cAN Header
+    TxHeader.Identifier = canId;
+    TxHeader.IdType = FDCAN_STANDARD_ID;
+    TxHeader.TxFrameType = FDCAN_DATA_FRAME;
+    TxHeader.DataLength = FDCAN_DLC_BYTES_1; // To do: Change to arg
+    TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+    TxHeader.BitRateSwitch = FDCAN_BRS_ON;
+    TxHeader.FDFormat = FDCAN_FD_CAN;
+    TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+    TxHeader.MessageMarker = 0;
+
+    // Send CAN Message
+    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData) != HAL_OK)
+    {
+    	Error_Handler();
+    }
+
+    // Wait until buffer size smaller than 3
+//    while(HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1) != 3) {} // To do : Check can transceiver size
 }
 
 
@@ -147,7 +172,9 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
 		switch(RxHeader.Identifier){
 		case CANID_ARM_STATE:
+			printf("ARM_STATR\r\n");
 			sendArmStateToRaspi();
+			printf("Successfully send\r\n");
 			break;
 
 		case CANID_ARM_ELEVATOR:
@@ -304,7 +331,7 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE END FDCAN1_Init 1 */
   hfdcan1.Instance = FDCAN1;
   hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV1;
-  hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_CLASSIC;
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
   hfdcan1.Init.AutoRetransmission = DISABLE;
   hfdcan1.Init.TransmitPause = DISABLE;
