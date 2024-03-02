@@ -57,7 +57,6 @@ FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[1];
 //uint8_t TxData[1] = {0x00};
 uint8_t armCurrentState;
-uint8_t TxData[8] = {1, 1, 1, 0, 1, 1, 0, 0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,6 +124,7 @@ void sendArmStateToRaspi() {
     TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
     TxHeader.MessageMarker = 0;
 
+    uint8_t TxData[1];
     if (armCurrentState == ARM_DOWN) {
     	TxData[0] = ARM_DOWN; // => 0
     } else {
@@ -136,33 +136,7 @@ void sendArmStateToRaspi() {
     {
     	Error_Handler();
     }
-
-    printf("Successfully send\r\n");
 }
-
-void sendCANMessage(uint32_t canId) {
-
-	// Set cAN Header
-    TxHeader.Identifier = canId;
-    TxHeader.IdType = FDCAN_STANDARD_ID;
-    TxHeader.TxFrameType = FDCAN_DATA_FRAME;
-    TxHeader.DataLength = FDCAN_DLC_BYTES_1; // To do: Change to arg
-    TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-    TxHeader.BitRateSwitch = FDCAN_BRS_ON;
-    TxHeader.FDFormat = FDCAN_FD_CAN;
-    TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-    TxHeader.MessageMarker = 0;
-
-    // Send CAN Message
-    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData) != HAL_OK)
-    {
-    	Error_Handler();
-    }
-
-    // Wait until buffer size smaller than 3
-//    while(HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1) != 3) {} // To do : Check can transceiver size
-}
-
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs){
 	if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
@@ -172,9 +146,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
 		switch(RxHeader.Identifier){
 		case CANID_ARM_STATE:
-			printf("ARM_STATR\r\n");
+			printf("ARM_STATE is %d\r\n", armCurrentState);
 			sendArmStateToRaspi();
-			printf("Successfully send\r\n");
 			break;
 
 		case CANID_ARM_ELEVATOR:
@@ -208,7 +181,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	setbuf(stdout, NULL);
+  setbuf(stdout, NULL);
 
   /* USER CODE END 1 */
 
@@ -234,27 +207,27 @@ int main(void)
   MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
   FDCAN_FilterTypeDef sFilterConfig;
- 	sFilterConfig.IdType = FDCAN_STANDARD_ID;
- 	sFilterConfig.FilterIndex = 0;
- 	sFilterConfig.FilterType = FDCAN_FILTER_MASK;
- 	sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
- 	sFilterConfig.FilterID1 = CANID_HAND1;
- 	sFilterConfig.FilterID2 = 0b11111111100;
+  sFilterConfig.IdType = FDCAN_STANDARD_ID;
+  sFilterConfig.FilterIndex = 0;
+  sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+  sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+  sFilterConfig.FilterID1 = CANID_HAND1;
+  sFilterConfig.FilterID2 = 0b11111111100;
 
- 	if (HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) != HAL_OK) {
- 			Error_Handler();
- 		}
- 		if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK) {
- 			Error_Handler();
- 		}
+  if (HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) != HAL_OK) {
+	  Error_Handler();
+  }
+  if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK) {
+	  Error_Handler();
+  }
 
- 		if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
- 			Error_Handler();
- 		}
+  if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+	  Error_Handler();
+  }
 
- 		if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
- 			Error_Handler();
- 		}
+  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+	  Error_Handler();
+  }
 
   /* USER CODE END 2 */
 
