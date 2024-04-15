@@ -38,11 +38,14 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define ARM_DOWN 0
-#define ARM_UP 1
+#define ARM_DOWN 1
+#define ARM_UP 0
 
 #define HAND_OPEN 0
 #define HAND_CLOSE 1
+
+#define HAND_EXPOSE 1
+#define HAND_STORE 0
 
 /* USER CODE END PM */
 
@@ -57,7 +60,8 @@ FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t RxData[1];
 //uint8_t TxData[1] = {0x00};
 uint8_t armCurrentState;
-uint8_t TxData[8] = {1, 1, 1, 0, 1, 1, 0, 0};
+//uint8_t TxData[8] = {1, 1, 1, 0, 1, 1, 0, 0};
+uint8_t TxData[1] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -78,14 +82,11 @@ int _write(int file, char *ptr, int len)
 }
 
 void Arm_Elevator(uint8_t upDown){
-	if(upDown == ARM_DOWN){
-		HAL_GPIO_WritePin(CYL_ELV_D_GPIO_Port, CYL_ELV_D_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(CYL_ELV_U_GPIO_Port, CYL_ELV_U_Pin, GPIO_PIN_RESET);
-	}
-	else if(upDown == ARM_UP){
-		HAL_GPIO_WritePin(CYL_ELV_D_GPIO_Port, CYL_ELV_D_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(CYL_ELV_U_GPIO_Port, CYL_ELV_U_Pin, GPIO_PIN_SET);
-	}
+  if (upDown == ARM_DOWN) {
+      HAL_GPIO_WritePin(CYL_ELV_GPIO_Port, CYL_ELV_Pin, GPIO_PIN_SET);
+  } else if (upDown == ARM_UP){
+      HAL_GPIO_WritePin(CYL_ELV_GPIO_Port, CYL_ELV_Pin, GPIO_PIN_RESET);
+  }
 }
 
 void Hand1(uint8_t openClose){
@@ -108,6 +109,14 @@ void Hand2(uint8_t openClose){
 		HAL_GPIO_WritePin(CYL_HND2_O_GPIO_Port, CYL_HND2_O_Pin, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(CYL_HND2_C_GPIO_Port, CYL_HND2_C_Pin, GPIO_PIN_SET);
 	}
+}
+
+void HandExpose(uint8_t openClose) {
+  if(openClose == HAND_EXPOSE) {
+      HAL_GPIO_WritePin(CYL_FAL_GPIO_Port, CYL_FAL_Pin, GPIO_PIN_SET);
+  } else if (openClose == HAND_STORE) {
+      HAL_GPIO_WritePin(CYL_FAL_GPIO_Port, CYL_FAL_Pin, GPIO_PIN_RESET);
+  }
 }
 
 /*
@@ -136,8 +145,6 @@ void sendArmStateToRaspi() {
     {
     	Error_Handler();
     }
-
-    printf("Successfully send\r\n");
 }
 
 void sendCANMessage(uint32_t canId) {
@@ -174,27 +181,51 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 		case CANID_ARM_STATE:
 			printf("ARM_STATR\r\n");
 			sendArmStateToRaspi();
-			printf("Successfully send\r\n");
 			break;
 
+		// 苗アームの上下
 		case CANID_ARM_ELEVATOR:
 			Arm_Elevator(RxData[0]);
-			armCurrentState = RxData[0];
 			printf("Arm elevator %d\r\n", RxData[0]);
 			break;
 
+		// 内側のアーム
 		case CANID_HAND1:
 			Hand1(RxData[0]);
-			printf("Hand 1 %d\r\n", RxData[0]);
+//			printf("Hand 1 %d\r\n", RxData[0]);
+			if (RxData[0] == 0) {
+			    printf("inside hand is close, RxData=%d\r\n", 0);
+			} else {
+			    printf("inside hand is open, RxData=%d\r\n", 1);
+			}
 			break;
 
+		// 外側のアーム
 		case CANID_HAND2:
 			Hand2(RxData[0]);
-			printf("Hand 2 %d\r\n", RxData[0]);
+//			printf("Hand 2 %d\r\n", RxData[0]);
+			if (RxData[0] == 0) {
+			    printf("outside hand is close, RxData=%d\r\n", 0);
+			} else {
+			    printf("outside hand is open, RxData=%d\r\n", 1);
+			}
+//		  HandExpose(RxData[0]);
+//		  printf("Hand Expose %d\r\n", RxData[0]);
 			break;
 
+		case CANID_ARM_EXPANDER:
+		  HandExpose(RxData[0]);
+		  // TODO: 逆かもしれない
+		  if (RxData[0] == 0) {
+		      printf("store seedling arm, RxData=%d\r\n", 0);
+		  } else {
+		      printf("set seedling arm, RxData=%d\r\n", 1);
+		  }
+		  break;
+
 		default:
-			printf("Invalid ID\r\n");
+//			printf("Invalid ID\r\n");
+		    break;
 		}
 	}
 }
@@ -236,10 +267,10 @@ int main(void)
   FDCAN_FilterTypeDef sFilterConfig;
  	sFilterConfig.IdType = FDCAN_STANDARD_ID;
  	sFilterConfig.FilterIndex = 0;
- 	sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+ 	sFilterConfig.FilterType = FDCAN_FILTER_RANGE;
  	sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
- 	sFilterConfig.FilterID1 = CANID_HAND1;
- 	sFilterConfig.FilterID2 = 0b11111111100;
+ 	sFilterConfig.FilterID1 = 0;
+ 	sFilterConfig.FilterID2 = 0x7FF;
 
  	if (HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) != HAL_OK) {
  			Error_Handler();
@@ -260,8 +291,11 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+ 	Arm_Elevator(ARM_UP);
   while (1)
   {
+//	sendArmStateToRaspi();
+//	HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -421,13 +455,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, CYL_ELV_U_Pin|CYL_ELV_D_Pin|CYL_HND1_O_Pin|CYL_HND1_C_Pin
-                          |CYL_HND2_O_Pin|CYL_HND2_C_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, CYL_HND1_O_Pin|CYL_HND1_C_Pin|CYL_HND2_O_Pin|CYL_HND2_C_Pin
+                          |CYL_FAL_Pin|CYL_ELV_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : CYL_ELV_U_Pin CYL_ELV_D_Pin CYL_HND1_O_Pin CYL_HND1_C_Pin
-                           CYL_HND2_O_Pin CYL_HND2_C_Pin */
-  GPIO_InitStruct.Pin = CYL_ELV_U_Pin|CYL_ELV_D_Pin|CYL_HND1_O_Pin|CYL_HND1_C_Pin
-                          |CYL_HND2_O_Pin|CYL_HND2_C_Pin;
+  /*Configure GPIO pins : CYL_HND1_O_Pin CYL_HND1_C_Pin CYL_HND2_O_Pin CYL_HND2_C_Pin
+                           CYL_FAL_Pin CYL_ELV_Pin */
+  GPIO_InitStruct.Pin = CYL_HND1_O_Pin|CYL_HND1_C_Pin|CYL_HND2_O_Pin|CYL_HND2_C_Pin
+                          |CYL_FAL_Pin|CYL_ELV_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
