@@ -178,19 +178,14 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 		}
 
 		switch(RxHeader.Identifier){
-		case CANID_ARM_STATE:
-			printf("ARM_STATR\r\n");
-			sendArmStateToRaspi();
-			break;
-
 		// 苗アームの上下
-		case CANID_ARM_ELEVATOR:
+		case CANID_SEEDLING_ARM_ELEVATOR_DOWN:
 			Arm_Elevator(RxData[0]);
 			printf("Arm elevator %d\r\n", RxData[0]);
 			break;
 
 		// 内側のアーム
-		case CANID_HAND1:
+		case CANID_SEEDLING_INSIDE_HAND_OPEN:
 			Hand1(RxData[0]);
 //			printf("Hand 1 %d\r\n", RxData[0]);
 			if (RxData[0] == 0) {
@@ -201,7 +196,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 			break;
 
 		// 外側のアーム
-		case CANID_HAND2:
+		case CANID_SEEDLING_OUTSIDE_HAND_OPEN:
 			Hand2(RxData[0]);
 //			printf("Hand 2 %d\r\n", RxData[0]);
 			if (RxData[0] == 0) {
@@ -213,7 +208,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 //		  printf("Hand Expose %d\r\n", RxData[0]);
 			break;
 
-		case CANID_SEEDLING_ARM_EXPAND:
+		case CAIND_SEEDLING_ARM_EXPAND:
 		  HandExpose(RxData[0]);
 		  // TODO: 逆かもしれない
 		  if (RxData[0] == 0) {
