@@ -213,7 +213,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 //		  printf("Hand Expose %d\r\n", RxData[0]);
 			break;
 
-		case CANID_ARM_EXPANDER:
+		case CANID_SEEDLING_ARM_EXPAND:
 		  HandExpose(RxData[0]);
 		  // TODO: 逆かもしれない
 		  if (RxData[0] == 0) {
