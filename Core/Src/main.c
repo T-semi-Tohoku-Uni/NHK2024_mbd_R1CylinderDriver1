@@ -286,7 +286,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
- 	Arm_Elevator(ARM_UP);
   while (1)
   {
 //	sendArmStateToRaspi();
@@ -448,10 +447,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, CYL_HND1_O_Pin|CYL_HND1_C_Pin|CYL_HND2_O_Pin|CYL_HND2_C_Pin
                           |CYL_FAL_Pin|CYL_ELV_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(BoardLED_GPIO_Port, BoardLED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : CYL_HND1_O_Pin CYL_HND1_C_Pin CYL_HND2_O_Pin CYL_HND2_C_Pin
                            CYL_FAL_Pin CYL_ELV_Pin */
@@ -461,6 +464,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : BoardLED_Pin */
+  GPIO_InitStruct.Pin = BoardLED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(BoardLED_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -478,6 +488,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  HAL_GPIO_WritePin(BoardLED_GPIO_Port, BoardLED_Pin, GPIO_PIN_SET);
   __disable_irq();
   while (1)
   {
